@@ -24,12 +24,32 @@ week_12 <- shaming %>%
 **Prompt:** Create a fitted model object called `fit_1` using this formula or, if you want, a formula which you prefer. You are trying to model `age` as a function of various parameters.
 
 age ~ sex + solo + primary_02 + primary_04 + treatment + sex:solo
+
+```{r sc1}
+fit_1 <- stan_glm(formula = age ~ sex + solo + primary_02 + primary_04 + treatment + sex:solo,
+                  data = week_12,
+                  refresh = 0, 
+                  seed = 9)
+
+```
+
                     
 * Is this a causal or predictive model? Why?
 
+Predictive - age is dependent
+
 * Interpret the fitted model. 
 
+Intercept - women who live alone, were not shamed, and did not vote in the past
+2 primaries (age = 46.2072)
+
+soloTRUE - 7.5 years older than women who didn't live alone
+sexMale - 1.2 years older
+sexMale:soloTRUE - 2.2 years younger
+
 * Should we keep all these variables? And the interaction term?
+
+
 
 * Are you surprised about the meaningfulness, or lack thereof, for the treatment variables?
 
@@ -40,6 +60,26 @@ age ~ sex + solo + primary_02 + primary_04 + treatment + sex:solo
 
 **Prompt:** Provide a posterior probability distribution for the expected difference in ages between those who live alone and those who do not. (Hint: Given that we are asking for an expected value, use `posterior_epred()`.)
 
+```{r}
+solo_t <- tibble(solo = c(FALSE, TRUE), primary_04 = "Yes", sex = "Male", primary_02 = "Yes")
+
+fit_2 <- stan_glm(age ~ sex + solo + primary_02 + primary_04 + sex:solo,
+                  data = week_12,
+                  refresh = 0)
+
+posterior_epred(fit_2, newdata = solo_t) %>%
+  as_tibble() %>%
+  rename(group = `1`, alone = `2`) %>%
+  pivot_longer(values_to = "age", names_to = "solo", cols = group:alone) %>%
+  ggplot(aes(x = age, fill = solo)) + 
+    geom_histogram(bins = 100, alpha = 0.6, aes(y = after_stat(count/sum(count)))) + 
+  theme_bw() + 
+  labs(y = "Frequency",
+       x = "Age",
+       title = "Posterior Probability Distribution of Age as Function of Whether An Individual Lives Alone",
+       subtitle = "For Men who Voted in the 2002 and 2004 Primary Elections")
+
+```
 
 
 
